@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIエッセイ＆日記作成ツール</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .editor-container {
+            height: 400px;
+        }
+        .suggestion-item {
+            transition: all 0.2s ease;
+        }
+        .suggestion-item:hover {
+            background-color: #e1f0ff;
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold text-indigo-600">AIエッセイ＆日記作成ツール</span>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="#" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium ml-3">ログイン</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex flex-col lg:flex-row">
+            <!-- サイドバー -->
+            <div class="w-full lg:w-64 mb-6 lg:mb-0 lg:mr-6">
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">エントリー</h2>
+                    <ul>
+                        <li class="mb-2">
+                            <a href="#" class="flex items-center text-indigo-600 font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                新規作成
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">今日の振り返り</a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">週末の計画</a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">読書感想</a>
+                        </li>
+                    </ul>
+                    <hr class="my-4">
+                    <h2 class="text-lg font-medium text-gray-900 mb-2">テンプレート</h2>
+                    <ul>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">日記</a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">週間レビュー</a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#" class="block px-2 py-1 rounded hover:bg-gray-100">エッセイ</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- メインエディタ -->
+            <div class="flex-1">
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <input type="text" id="title-input" class="w-1/2 px-3 py-2 border border-gray-300 rounded-md" placeholder="タイトルを入力">
+                        <div class="flex">
+                            <button id="save-btn" class="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2 rounded-md text-sm font-medium mr-2">
+                                保存
+                            </button>
+                            <button id="ai-suggest-btn" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium">
+                                AIサジェスト
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="editor" class="w-full h-full p-4 border border-gray-300 rounded-md" placeholder="ここに日記やエッセイを書き始めてください..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AIサジェストパネル -->
+            <div id="ai-panel" class="w-full lg:w-64 mt-6 lg:mt-0 lg:ml-6 hidden">
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-medium text-gray-900">AIサジェスト</h2>
+                        <button id="close-ai-panel" class="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="ai-suggestions" class="space-y-2">
+                        <!-- AIサジェストがここに表示されます -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 要素の取得
+            const aiSuggestBtn = document.getElementById('ai-suggest-btn');
+            const aiPanel = document.getElementById('ai-panel');
+            const closeAiPanel = document.getElementById('close-ai-panel');
+            const editor = document.getElementById('editor');
+            const aiSuggestions = document.getElementById('ai-suggestions');
+            const saveBtn = document.getElementById('save-btn');
+            const titleInput = document.getElementById('title-input');
+            
+            // モックサジェスチョン
+            const mockSuggestions = [
+                "この経験から学んだことは、困難な状況でも冷静に判断することの重要性です。",
+                "次のステップとして、より具体的な行動計画を立てることが考えられます。",
+                "別の視点から考えると、この問題は実は大きなチャンスかもしれません。",
+                "この出来事が示唆しているのは、私たちの準備不足だったのかもしれません。"
+            ];
+            
+            // エントリー項目をクリックした時の処理
+            document.querySelectorAll('a.block').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    titleInput.value = this.textContent;
+                    editor.value = `${this.textContent}についての記録を始めます...\n\n`;
+                });
+            });
+            
+            // AIサジェストボタンをクリックした時の処理
+            aiSuggestBtn.addEventListener('click', function() {
+                // ローディング表示
+                aiSuggestions.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-indigo-500"></div></div>';
+                
+                // AIパネルを表示
+                aiPanel.classList.remove('hidden');
+                
+                // モックサジェスチョンを表示（実際はここでAPIを呼び出す）
+                setTimeout(() => {
+                    aiSuggestions.innerHTML = '';
+                    
+                    mockSuggestions.forEach(suggestion => {
+                        const suggestionElement = document.createElement('div');
+                        suggestionElement.className = 'suggestion-item p-2 border border-gray-200 rounded cursor-pointer';
+                        suggestionElement.textContent = suggestion;
+                        
+                        // クリックイベントを追加
+                        suggestionElement.addEventListener('click', function() {
+                            editor.value += "\n\n" + this.textContent;
+                            editor.focus();
+                        });
+                        
+                        aiSuggestions.appendChild(suggestionElement);
+                    });
+                }, 1000);
+            });
+            
+            // AIパネルを閉じる
+            closeAiPanel.addEventListener('click', function() {
+                aiPanel.classList.add('hidden');
+            });
+            
+            // 保存ボタンの処理
+            saveBtn.addEventListener('click', function() {
+                const title = titleInput.value || '無題のエントリー';
+                const content = editor.value;
+                
+                // LocalStorageに保存
+                const savedEntries = JSON.parse(localStorage.getItem('entries') || '[]');
+                savedEntries.push({ 
+                    id: Date.now(), 
+                    title: title, 
+                    content: content, 
+                    date: new Date().toISOString() 
+                });
+                localStorage.setItem('entries', JSON.stringify(savedEntries));
+                
+                alert('エントリーを保存しました！');
+            });
+            
+            // 初期化時に保存されたエントリーがあれば表示
+            const savedEntries = JSON.parse(localStorage.getItem('entries') || '[]');
+            if (savedEntries.length > 0) {
+                const lastEntry = savedEntries[savedEntries.length - 1];
+                titleInput.value = lastEntry.title;
+                editor.value = lastEntry.content;
+            }
+        });
+    </script>
+</body>
+</html>
